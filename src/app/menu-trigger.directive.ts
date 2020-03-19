@@ -19,8 +19,9 @@ import {
 import { TemplatePortal } from "@angular/cdk/portal";
 import { POSITION_MAP } from "./connection-position-pair";
 import { merge, Subscription, Subject } from "rxjs";
-import { filter } from "rxjs/operators";
+import { filter, debounceTime, tap } from "rxjs/operators";
 import { ESCAPE, hasModifierKey } from "@angular/cdk/keycodes";
+import { MenuComponent } from "./menu/menu.component";
 
 enum MenuState {
   closed = "closed",
@@ -31,7 +32,7 @@ enum MenuState {
   selector: "[appMenuTrigger]"
 })
 export class MenuTriggerDirective implements OnInit, OnDestroy, AfterViewInit {
-  @Input() appMenuTrigger: TemplateRef<any>;
+  @Input() appMenuTrigger: MenuComponent;
   @Input() menuPosition: string = "rightTop";
   @Input() triggerBy: "click" | "hover" | null = "click";
 
@@ -104,8 +105,10 @@ export class MenuTriggerDirective implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private initialize() {
-    const handle$ = this.triggerBy === "hover" ? this.hover$ : this.click$;
-    handle$.subscribe(value => {
+    const menuVisible$ = this.appMenuTrigger.visible$;
+    const hover$ = merge(menuVisible$, this.hover$).pipe(debounceTime(150));
+    const handle$ = this.triggerBy === "hover" ? hover$ : this.click$;
+    handle$.pipe(tap(state => console.log({ state }))).subscribe(value => {
       if (value) {
         this.openMenu();
       } else {
@@ -121,7 +124,7 @@ export class MenuTriggerDirective implements OnInit, OnDestroy, AfterViewInit {
     return new OverlayConfig({
       positionStrategy,
       minWidth: "200px",
-      hasBackdrop: true,
+      hasBackdrop: this.triggerBy === "click",
       backdropClass: "w-menu-backdrop",
       panelClass: "w-menu-panel",
       scrollStrategy: this.overlay.scrollStrategies.reposition()
@@ -135,9 +138,12 @@ export class MenuTriggerDirective implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private getPortal(): TemplatePortal {
-    if (!this.portal || this.portal.templateRef !== this.appMenuTrigger) {
+    if (
+      !this.portal ||
+      this.portal.templateRef !== this.appMenuTrigger.menuTemplate
+    ) {
       this.portal = new TemplatePortal<any>(
-        this.appMenuTrigger,
+        this.appMenuTrigger.menuTemplate,
         this.viewContainerRef
       );
     }

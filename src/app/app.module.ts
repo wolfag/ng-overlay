@@ -8,9 +8,10 @@ import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { MenuTriggerDirective } from "./menu-trigger.directive";
+import { MenuComponent } from "./menu/menu.component";
 
 @NgModule({
-  declarations: [AppComponent, MenuTriggerDirective],
+  declarations: [AppComponent, MenuTriggerDirective, MenuComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,
